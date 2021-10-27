@@ -12,7 +12,8 @@ Modified on: 26 October 2021 19:37:17
 int fd[2],fd2[2];//File descriptor for creating a pipe
 volatile int for_exit[2];
 
-/*int size(FILE* fl;) {
+
+int size(FILE* fl) {
     int j,size;
     
     j = fseek(fl, 0L, SEEK_END);
@@ -31,20 +32,38 @@ volatile int for_exit[2];
         return -1;
     }
 
+     j = fseek(fl, 0L, SEEK_SET);
+    if (j == -1) {
+        ferror(fl);
+        perror("no fseek the argument file\n");
+        fclose(fl);
+        return -1;
+    }
+
     if (size != 0) {
         return size;
     }
     return 0;
-}*/
+}
 
 void *reader()
-{   char    ch[11];
-    int result;
+{   char    ch;
+    int result, megetos,i;
+    FILE* fl;
 
-    read (fd[0],ch,10);
-    printf ("Reader: %s\n", ch);  
-    
-    while (for_exit[1]!=1){}
+    fl = fopen("output_1.txt","w+");
+    if (fl == NULL)
+    {
+        perror("2");
+        exit(1);
+    }
+
+    read (fd[0], &megetos,sizeof(int));
+    for ( i = 0; i < megetos; i++){
+        read (fd[0],&ch,1); //alagi
+        fwrite(&ch,1,1,fl);
+    } 
+    while (for_exit[1]!=1){} 
     close(fd[0]);
     close(fd[1]);
     result = pipe (fd2);
@@ -54,24 +73,55 @@ void *reader()
     }
     for_exit[0]=1;
     
-    write (fd2[1], ch,10);
-    printf ("\nWriter_2: %s\n", ch);
-    for (size_t i = 0; i < 1000000; i++){    }
-         
+    
+    megetos = size(fl);
+    printf("2: %d\n",megetos);
+    write (fd[1], &megetos,sizeof(int));
+    for ( i = 0; i < megetos; i++){
+        fread(&ch,1,1,fl);
+        write (fd[1], &ch,1);   //alagi
+    }
+    for (size_t i = 0; i < 1000000; i++){    } 
+
+    fclose(fl); 
     for_exit[0]=2;
 }
 
 void *writer()
-{   char    str[11],str2[11];
+{   char    ch;
+    int megetos,i;
+    FILE* fl;
+    
+    fl = fopen("input.txt","r");
+    if (fl == NULL)
+    {
+        perror("1");
+        exit(1);
+    }
 
-    scanf("%s",str);
-    write (fd[1], str,10);
-    printf ("Writer: %s\n", str);
+    megetos = size(fl);
+    printf("1: %d\n",megetos);
+    write (fd[1], &megetos,sizeof(int));
+    for ( i = 0; i < megetos; i++){
+        fread(&ch,1,1,fl);
+        write (fd[1], &ch,1);   //alagi
+    }
+    
+    fclose(fl);
+    fl = fopen("output_2.txt","w+");
+    if (fl == NULL)
+    {
+        perror("1");
+        exit(1);
+    }
     for_exit[1]=1;
     
     while (for_exit[0]!=1){}
-    read (fd2[0],str2,10);
-    printf ("Reader_2: %s\n", str2); 
+    read (fd[0], &megetos,sizeof(int));
+    for ( i = 0; i < megetos; i++){
+        read (fd[0],&ch,1); //alagi
+        fwrite(&ch,1,1,fl);
+    } 
     for_exit[1]=2; 
 }
 
