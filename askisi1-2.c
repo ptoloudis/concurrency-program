@@ -9,6 +9,7 @@ Modified on: 29 October 2021 12:33:04
 #include <stdio.h>
 #include <pthread.h>
 #include <math.h>
+#include <time.h>
 
 int *for_worker;
 int *arr;
@@ -24,11 +25,9 @@ void *  prime_number(void *arg){
 
     worker = *(int *)arg;
     arr[worker] = 1;
-    printf("Worker:%d\n",worker);
 
     while (arr[worker] != 3){   
         if (arr[worker] == 2){
-            //printf("sfgjsb\n");
             flag = 1;
             number = for_worker[worker];
             for (i = 2; i <= sqrt(number); i++) {
@@ -38,12 +37,10 @@ void *  prime_number(void *arg){
                 }
             }
 
-            //printf("flag: %d\n",flag);
             if (number <= 1){
                 flag = 0; }
-            //printf("flag: %d\n",flag);
             if (flag) 
-                printf("%d by worker %d: 1\n", number, worker);
+                printf("%d: 1\n", number);
             else 
                 printf("%d: 0\n", number);
 
@@ -51,7 +48,6 @@ void *  prime_number(void *arg){
         }        
     }
     
-    printf("Bey for worker:%d\n",worker);
     for ( j = 0; j < 10000000; j++){   }
     arr[worker] = 4;    
     return 0;
@@ -89,6 +85,11 @@ int main(int argc, char *argv[]){
         }
     }
 
+// start time 
+   clock_t start,end;
+   double time;
+   start = clock();
+
     while (1){
         scanf("%d",&number);
         if (number == -1)
@@ -120,8 +121,12 @@ int main(int argc, char *argv[]){
         }
     }
 
-// free 
-    
+//finish time
+    end = clock();
+    time = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("%lf\n",time);
+
+// free     
     free(for_worker);
     free(arr);
 
