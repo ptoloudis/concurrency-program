@@ -20,7 +20,7 @@ int *arr;
 */
 
 void *  prime_number(void *arg){
-    int number, worker, i, flag;
+    int number, worker, i,j, flag;
 
     worker = *(int *)arg;
     arr[worker] = 1;
@@ -38,12 +38,12 @@ void *  prime_number(void *arg){
                 }
             }
 
-            printf("flag: %d\n",flag);
+            //printf("flag: %d\n",flag);
             if (number <= 1){
                 flag = 0; }
             //printf("flag: %d\n",flag);
             if (flag) 
-                printf("%d: 1\n", number);
+                printf("%d by worker %d: 1\n", number, worker);
             else 
                 printf("%d: 0\n", number);
 
@@ -51,6 +51,8 @@ void *  prime_number(void *arg){
         }        
     }
     
+    printf("Bey for worker:%d\n",worker);
+    for ( j = 0; j < 10000000; j++){   }
     arr[worker] = 4;    
     return 0;
 }
@@ -75,6 +77,8 @@ int main(int argc, char *argv[]){
 
     for ( i = 0; i < n; i++){
         pthread_create(&test,NULL,prime_number,(void *) &i);
+        for ( j = 0; j < 1000000; j++){   }
+        
     }
     
     j=0;
