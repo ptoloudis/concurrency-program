@@ -20,7 +20,7 @@ int *arr;
     4 = close
 */
 
-void *  prime_number(void *arg){
+void * prime_number(void *arg){
     int number, worker, i,j, flag;
 
     worker = *(int *)arg;
