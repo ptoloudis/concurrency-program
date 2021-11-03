@@ -17,7 +17,8 @@ struct my_pipe{
     int valid; // 1 is valid, 0 is not valid
     int write; // 0 to not write, 1 to write, 2 is close 
     int output;
-    int input; 
+    int input;
+    int full; 
 };
 
 void pipe_init(){
@@ -46,9 +47,9 @@ int pipe_open(int size){
     if ((i == 0) || (arr[j].valid != 0)){
         many_pipe++;
         arr = (struct my_pipe *) realloc (arr,many_pipe * sizeof(struct my_pipe));
-        i = j;
     }
-    
+    i = j;
+
     
     if (arr == NULL){
         perror("malloc struct\n");
@@ -64,6 +65,7 @@ int pipe_open(int size){
     arr[i].output= 0;
     arr[i].input = 0;
     arr[i].write = 0;
+    arr[i].full = 0;
     return i;
 }
 
@@ -88,10 +90,10 @@ int pipe_write(int p, char c){
     
     arr[p].write = 1;
     int input = arr[p].input;
-    int output = arr[p].output;
+    //int output = arr[p].output;
     int size = arr[p].size;
     
-    while ((input == size) && (output == 0)){ } // allagi
+    while ( arr[p].full == 1){ } // allagi
     
     if (input == size){
         arr[p].input = 0;
@@ -102,6 +104,9 @@ int pipe_write(int p, char c){
     arr[p].input++;
     arr[p].write = 0;
 
+    if (arr[p].input == arr[p].output)
+        arr[p].full = 1;
+    
     return 1;
 }
 
@@ -109,12 +114,12 @@ int pipe_read(int p, char *c){
     if (arr[p].valid == 0)
         return -1;
     
-    if (arr[p].input == arr[p].output){
+    if ((arr[p].input == arr[p].output) && (arr[p].full == 0)){
         if (arr[p].write == 2)
             return 0;
     }
     
-    while ((arr[p].input == arr[p].output)){ } // allagi
+    while ((arr[p].input == arr[p].output) && (arr[p].full == 0)){ } // allagi
     
     if (arr[p].output == arr[p].size){
         arr[p].output = 0;
@@ -122,6 +127,11 @@ int pipe_read(int p, char *c){
     
     int out = arr[p].output;
     *c = arr[p].str[out];
+    if(c == NULL)
+        perror("5");
     arr[p].output++;
+    if (arr[p].full)
+        arr[p].full = 0;
+    
     return 1;   
 }
