@@ -91,7 +91,7 @@ int pipe_write(int p, char c){
     int output = arr[p].output;
     int size = arr[p].size;
     
-    while ((input == size) && (output == 0)){ } 
+    while ((input == size) && (output == 0)){ } // allagi
     
     if (input == size){
         arr[p].input = 0;
@@ -114,7 +114,7 @@ int pipe_read(int p, char *c){
             return 0;
     }
     
-    while ((arr[p].input == arr[p].output)){ }
+    while ((arr[p].input == arr[p].output)){ } // allagi
     
     if (arr[p].output == arr[p].size){
         arr[p].output = 0;
