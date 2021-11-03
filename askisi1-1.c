@@ -62,6 +62,7 @@ void *reader()
 
     do{
         i = pipe_read (fd,&ch); //alagi
+        printf("%d : %c",i,ch);
         if (i != 0)
             fwrite(&ch,1,1,fl);
         for (size_t o = 0; o < 1000; o++){ }
@@ -100,6 +101,7 @@ void *writer()
     FILE* fl;
 
     result = pipe_open(size_pipe);
+    printf("%d\n",result);
     if (result < 0){
        perror("pipe ");
        exit(1);
@@ -117,8 +119,7 @@ void *writer()
     //write (fd[1], &megetos,sizeof(int));
     for ( i = 0; i < megetos; i++){
         fread(&ch,1,1,fl);
-        printf("%c\n",ch);
-        pipe_write(fd, ch);   //alagi
+        printf("%c : %d\n",ch, pipe_write(fd, ch));   //alagi
     }
     pipe_writeDone(fd);
     
