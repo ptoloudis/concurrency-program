@@ -1,14 +1,14 @@
 CC = gcc
 CCFLAGS = -Wall -g 
-OBJ = test.o my_pipe.o
+OBJ = FIFO_pipes.o my_pipe.o
 
-test: $(OBJ)
-	$(CC) $(OBJ) -o test -lpthread
+askisi1-1: $(OBJ)
+	$(CC) $(OBJ) -o FIFO_pipes -lpthread
 
 my_pipe.o: my_pipe.c my_pipe.h
 	$(CC) $(CCFLAGS) -c $<
 
-test.o: test.c my_pipe.h
+FIFO_pipes.o: FIFO_pipes.c my_pipe.h
 	$(CC) $(CCFLAGS) -c $<
 
 .PHONY: clean
