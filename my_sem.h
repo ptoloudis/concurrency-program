@@ -5,14 +5,14 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
-typedef struct my_sem
+typedef struct mysem
 {
-    struct ipc_perm sem_perm;  /* Ownership and permissions */
-    time_t          sem_otime; /* Last semop time */
-    time_t          sem_ctime; /* Last change time */
-    unsigned long   sem_nsems; /* No. of semaphores in set */
+    int semid;
+    int initialized; //If semaphore is initialized
+    int sem_num; //Amount of semaphores in group
+    int sem_op;  //Operation of semaphore is up or down
+    // int sem_flag;
 }mysem_t;
-
 
 int mysem_init(mysem_t *s, int n);
 int mysem_down(mysem_t *s);
