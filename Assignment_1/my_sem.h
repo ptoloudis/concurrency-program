@@ -1,3 +1,9 @@
+/*
+Team : 10
+Names : Apostolopoulou Ioanna & Toloudis Panagiotis
+AEM : 03121 & 02995
+*/
+
 #ifndef _HEADER_H
 #define _HEADER_H
 
