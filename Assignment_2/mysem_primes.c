@@ -138,7 +138,6 @@ int main(int argc, char *argv[])
     // Creation of the Worker and Delay until All Workers are Ready to Work
     for ( i = 0; i < num_of_threads; i++)
     {
-        //mysem_down(&sem_primes[i]);
         pthread_create(&test,NULL,prime_number,(void *) &i);
         for ( j = 0; j < 20000000; j++){} 
     }
