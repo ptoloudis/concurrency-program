@@ -127,6 +127,7 @@ int mysem_destroy(mysem_t *s)
 
     // Destroy semaphore
     int result;   
+    
     result = semctl(s->semid, s->sem_num, IPC_RMID);
     if(result == -1)
     {
