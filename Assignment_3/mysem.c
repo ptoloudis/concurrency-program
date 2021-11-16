@@ -52,6 +52,8 @@ int mysem_init(mysem_t *s, int n)
         perror("ERROR: Semaphore not initialized");
         exit(EXIT_FAILURE);
     }
+
+    s->initialized = 1;
     
     return 1;
 }
@@ -79,7 +81,7 @@ int mysem_down(mysem_t *s)
         exit(EXIT_FAILURE);
     }
     
-    s->sem_op = 0;
+    s->sem_op = -1;
     return 1;
 }
 
@@ -125,6 +127,7 @@ int mysem_destroy(mysem_t *s)
 
     // Destroy semaphore
     int result;   
+    
     result = semctl(s->semid, s->sem_num, IPC_RMID);
     if(result == -1)
     {
