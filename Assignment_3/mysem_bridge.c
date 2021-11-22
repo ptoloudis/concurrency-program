@@ -24,14 +24,14 @@ typedef struct bridge{
     int blue_waiting; // Amount of Blue Cars Waiting
     int cars_on_bridge;
     mysem_t *mysem_array;
+    mysem_t mutex; 
 }bridge_t;
 
 void arriving_cars(bridge_t *ptr)
 {
-    mysem_down(&ptr->mysem_array[0]);
+    mysem_down(&ptr->mutex);
     if(ptr->color == red)
     {
-        mysem_down(&ptr->mysem_array[0]);
         if(ptr->cars_on_bridge < ptr->capacity)
         {
             ptr->cars_on_bridge ++;
@@ -41,11 +41,23 @@ void arriving_cars(bridge_t *ptr)
                 ptr->cars_on_bridge ++;
                 mysem_up(&ptr->mysem_array[0]);
             }
+            printf("Red Cars arriving on the bridge.\n");
+            mysem_up(&ptr->mutex);
+        }
+        else if(ptr->cars_on_bridge == ptr->capacity)
+        {
+            ptr->red_waiting ++;
+            printf("Red Cars on the Bridge reached max capacity.\n");
+            mysem_up(&ptr->mutex);
+            mysem_down(&ptr->mysem_array[0]);
+        }
+        else
+        {
+            return;
         }
     }
     else if(ptr->color == blue)
     {
-        mysem_down(&ptr->mysem_array[1]);
         if(ptr->cars_on_bridge < ptr->capacity)
         {
             ptr->cars_on_bridge ++;
@@ -55,6 +67,19 @@ void arriving_cars(bridge_t *ptr)
                 ptr->cars_on_bridge ++;
                 mysem_up(&ptr->mysem_array[1]);
             }
+            printf("Blue Cars arriving on the bridge.\n");
+            mysem_up(&ptr->mutex);
+        }
+        else if(ptr->cars_on_bridge == ptr->capacity)
+        {
+            ptr->blue_waiting ++;
+            printf("Blue Cars on the Bridge reached max capacity.\n");
+            mysem_up(&ptr->mutex);
+            mysem_down(&ptr->mysem_array[1]);
+        }
+        else
+        {
+            return;
         }
     }
     return;
@@ -62,7 +87,7 @@ void arriving_cars(bridge_t *ptr)
 
 void leaving_cars(bridge_t *ptr)
 {
-    mysem_down(&ptr->mysem_array[0]);
+    mysem_down(&ptr->mutex);
     if(ptr->color == red)
     {
         mysem_down(&ptr->mysem_array[0]);
@@ -78,7 +103,8 @@ void leaving_cars(bridge_t *ptr)
             }
             else
             {
-                mysem_up(&ptr->mysem_array[0]);
+                mysem_up(&ptr->mutex);
+                //mysem_up(&ptr->mysem_array[0]);
             }
             return;
         }
@@ -86,20 +112,67 @@ void leaving_cars(bridge_t *ptr)
         {
             printf("Last Car on Bridge is Leaving.\n");
             ptr->cars_on_bridge --;
+            mysem_up(&ptr->mutex);
             return;
         }
+    }
+    else if(ptr->color == blue)
+    {
+        mysem_down(&ptr->mysem_array[1]);
+        if(ptr->cars_on_bridge == ptr->capacity)
+        {
+            printf("Blue Cars are leaving the Bridge.\n");
+            ptr->cars_on_bridge --;
+            if(ptr->blue_waiting > 0)
+            {
+                ptr->blue_waiting --;
+                ptr->cars_on_bridge ++;
+                mysem_up(&ptr->mutex);
+                mysem_up(&ptr->mysem_array[1]);
+            }
+            else
+            {
+                mysem_up(&ptr->mutex);
+                //mysem_up(&ptr->mysem_array[1]);
+            }
+            return;
+        }
+        else if(ptr->cars_on_bridge == 1)
+        {
+            printf("Last Car on Bridge is Leaving.\n");
+            ptr->cars_on_bridge --;
+            mysem_up(&ptr->mutex);
+            return;
+        }   
     }
     return;
 }
 void *Red_Cars(void *argument)
 {
+    bridge_t *ptr;
+
+    ptr = (bridge_t *)argument;
+
+    arriving_cars(ptr);
+    sleep(2);
+    leaving_cars(ptr);
 
     return 1;
 }
+
 void *Blue_Cars(void *argument)
 {
+    bridge_t *ptr;
+
+    ptr = (bridge_t *)argument;
+
+    arriving_cars(ptr);
+    sleep(2);
+    leaving_cars(ptr);
+
     return 1;
 }
+
 int main(int argc, char *argv[])
 {
     bridge_t *current;
