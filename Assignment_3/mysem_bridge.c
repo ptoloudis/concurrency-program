@@ -157,7 +157,7 @@ void *Red_Cars(void *argument)
     sleep(2);
     leaving_cars(ptr);
 
-    return 0;
+    return NULL;
 }
 
 void *Blue_Cars(void *argument)
@@ -170,15 +170,16 @@ void *Blue_Cars(void *argument)
     sleep(2);
     leaving_cars(ptr);
 
-    return 0;
+    return NULL;
 }
 
 int main(int argc, char *argv[])
 {
     bridge_t *current;
     //mysem_t *mysem_array;
-    int num_of_sem, semid;
+    int num_of_sem, semid, cars;
     int i;
+    pthread_t bridge;
 
     if(argc != 2)
     {
@@ -221,22 +222,30 @@ int main(int argc, char *argv[])
         
     }
     
-    // // Create Threads
-    // pthread_create(&train, NULL, start_train_route, (void*)&ptr);
-    
-    // while(1)
-    // {
-    //     scanf("%d", &passengers);
-    //     if(passengers < 0)
-    //     {
-    //         break;
-    //     }
-    //     for(int i = 0; i < passengers; i++)
-    //     {
-    //         pthread_create(&train, NULL, fill_train, (void*)&ptr);
-    //     }
-    //     scanf("%d", &time);
-    //     sleep(time);
-    // }
+    // Create Threads    
+    while(1)
+    {
+        scanf("%d %u %d", &cars, &current->color, &current->time);
+        if(cars < 0)
+        {
+            break;
+        }
+        if (current->color == red)
+        {
+            for(int i = 0; i < cars; i++)
+            {
+                pthread_create(&bridge, NULL, Red_Cars, (void*)&current);
+            } 
+        }
+        else
+        {
+            for(int i = 0; i < cars; i++)
+            {
+                pthread_create(&bridge, NULL, Blue_Cars, (void*)&current);
+            } 
+        } 
+        
+        sleep(current->time);
+    }
     return 0;
 }
