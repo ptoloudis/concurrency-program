@@ -53,6 +53,7 @@ void arriving_cars(bridge_t *ptr)
         }
         else
         {
+            mysem_up(&ptr->mutex);
             return;
         }
     }
@@ -70,7 +71,7 @@ void arriving_cars(bridge_t *ptr)
             printf("Blue Cars arriving on the bridge.\n");
             mysem_up(&ptr->mutex);
         }
-        else if(ptr->cars_on_bridge == ptr->capacity)
+        else if(ptr->cars_on_bridge >= ptr->capacity)
         {
             ptr->blue_waiting ++;
             printf("Blue Cars on the Bridge reached max capacity.\n");
@@ -79,6 +80,7 @@ void arriving_cars(bridge_t *ptr)
         }
         else
         {
+            mysem_up(&ptr->mutex);
             return;
         }
     }
@@ -104,7 +106,6 @@ void leaving_cars(bridge_t *ptr)
             else
             {
                 mysem_up(&ptr->mutex);
-                //mysem_up(&ptr->mysem_array[0]);
             }
             return;
         }
@@ -133,7 +134,6 @@ void leaving_cars(bridge_t *ptr)
             else
             {
                 mysem_up(&ptr->mutex);
-                //mysem_up(&ptr->mysem_array[1]);
             }
             return;
         }
@@ -176,8 +176,7 @@ void *Blue_Cars(void *argument)
 int main(int argc, char *argv[])
 {
     bridge_t *current;
-    //mysem_t *mysem_array;
-    int num_of_sem, semid, cars;
+    int num_of_sem, semid, capacity, cars;
     int i;
     pthread_t bridge;
 
@@ -188,8 +187,16 @@ int main(int argc, char *argv[])
     }
     else
     {
-        current->capacity = atoi(argv[1]);
+        capacity = atoi(argv[1]);
     }
+
+    current = (bridge_t *) malloc(sizeof(bridge_t));
+    if(current == NULL)
+    {
+        perror("No Malloc done to Array Semaphore");
+        exit(EXIT_FAILURE);
+    }
+    current->capacity = capacity;
 
     // Create the Semaphore
     num_of_sem = 2;
