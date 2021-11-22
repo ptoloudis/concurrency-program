@@ -157,7 +157,7 @@ void *Red_Cars(void *argument)
     sleep(2);
     leaving_cars(ptr);
 
-    return 1;
+    return 0;
 }
 
 void *Blue_Cars(void *argument)
@@ -170,7 +170,7 @@ void *Blue_Cars(void *argument)
     sleep(2);
     leaving_cars(ptr);
 
-    return 1;
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 
     // Create the Semaphore Array
     current->mysem_array = (mysem_t *) malloc((num_of_sem) * sizeof(mysem_t));
-    if(mysem_array == NULL)
+    if(current->mysem_array == NULL)
     {
         perror("No Malloc done to Array Semaphore");
         exit(EXIT_FAILURE);
@@ -210,10 +210,10 @@ int main(int argc, char *argv[])
     // Initialize the Semaphore Array, the Semaphore and the Array of Numbers
     for (i = 0; i < num_of_sem; i++)
     {   
-        mysem_array[i].sem_num = i; // mysem_array[0] = Red Car      //mysem_array[1] = Blue Car
-        mysem_array[i].semid = semid;
-        mysem_array[i].sem_op = 0;
-        if (mysem_init(&mysem_array[i], 0) == -1)
+        current->mysem_array[i].sem_num = i; // mysem_array[0] = Red Car      //mysem_array[1] = Blue Car
+        current->mysem_array[i].semid = semid;
+        current->mysem_array[i].sem_op = 0;
+        if (mysem_init(&current->mysem_array[i], 0) == -1)
         {
             perror("Error in mysem_init");
             exit(EXIT_FAILURE);

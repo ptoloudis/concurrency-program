@@ -1,5 +1,6 @@
 CC = gcc
 CCFLAGS = -Wall -g 
+OBJ: mysem.o mysem_bridge.o
 
 mysem_bridge: $(OBJ)
 	$(CC) $(OBJ) -o mysem_bridge -lpthread 
