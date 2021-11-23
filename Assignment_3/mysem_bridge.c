@@ -14,11 +14,12 @@ AEM : 03121 & 02995
 #include <pthread.h>
 #include "my_sem.h"
 
+#define time_in_bridge 2
+
 enum color_t {red, blue};
 
 typedef struct bridge{
     int capacity;
-    int time;
     enum color_t color;
     int red_waiting; //Amount of Red Cars Waiting
     int blue_waiting; // Amount of Blue Cars Waiting
@@ -27,156 +28,132 @@ typedef struct bridge{
     mysem_t mutex; 
 }bridge_t;
 
-void arriving_cars(bridge_t *ptr)
+bridge_t *current;
+
+void arriving_cars(enum color_t color2)
 {
-    mysem_down(&ptr->mutex);
-    if(ptr->color == red)
+    mysem_down(&current->mutex);
+    if(color2 == red)
     {
-        if(ptr->cars_on_bridge < ptr->capacity)
+        current->red_waiting ++;
+        printf("car on brige: %d\n", current->cars_on_bridge);
+        if(current->cars_on_bridge >= current->capacity)
         {
-            ptr->cars_on_bridge ++;
-            while((ptr->red_waiting > 0) && (ptr->cars_on_bridge < ptr->capacity))
-            {
-                ptr->red_waiting --;
-                ptr->cars_on_bridge ++;
-                mysem_up(&ptr->mysem_array[0]);
-            }
-            printf("Red Cars arriving on the bridge.\n");
-            mysem_up(&ptr->mutex);
-        }
-        else if(ptr->cars_on_bridge == ptr->capacity)
-        {
-            ptr->red_waiting ++;
             printf("Red Cars on the Bridge reached max capacity.\n");
-            mysem_up(&ptr->mutex);
-            mysem_down(&ptr->mysem_array[0]);
+            mysem_up(&current->mutex);
+            mysem_down(&current->mysem_array[0]);
+            mysem_down(&current->mutex);
         }
-        else
+
+        if((current->red_waiting > 0) && (current->cars_on_bridge < current->capacity))
         {
-            mysem_up(&ptr->mutex);
-            return;
+            current->red_waiting --;
+            current->cars_on_bridge ++;
+            mysem_up(&current->mysem_array[0]);
         }
+        printf("Red Cars arriving on the bridge.\n");
+        mysem_up(&current->mutex);
     }
-    else if(ptr->color == blue)
+    else if(color2 == blue)
     {
-        if(ptr->cars_on_bridge < ptr->capacity)
+        current->blue_waiting ++;
+        if(current->cars_on_bridge >= current->capacity)
         {
-            ptr->cars_on_bridge ++;
-            while((ptr->blue_waiting > 0) && (ptr->cars_on_bridge < ptr->capacity))
-            {
-                ptr->blue_waiting --;
-                ptr->cars_on_bridge ++;
-                mysem_up(&ptr->mysem_array[1]);
-            }
-            printf("Blue Cars arriving on the bridge.\n");
-            mysem_up(&ptr->mutex);
-        }
-        else if(ptr->cars_on_bridge >= ptr->capacity)
-        {
-            ptr->blue_waiting ++;
             printf("Blue Cars on the Bridge reached max capacity.\n");
-            mysem_up(&ptr->mutex);
-            mysem_down(&ptr->mysem_array[1]);
+            mysem_up(&current->mutex);
+            mysem_down(&current->mysem_array[1]);
+            mysem_down(&current->mutex);
         }
-        else
+
+        if((current->blue_waiting > 0) && (current->cars_on_bridge < current->capacity))
         {
-            mysem_up(&ptr->mutex);
-            return;
+            current->blue_waiting --;
+            current->cars_on_bridge ++;
+            mysem_up(&current->mysem_array[1]);
         }
+        printf("Blue Cars arriving on the bridge.\n");
+        mysem_up(&current->mutex);
     }
     return;
 }
 
-void leaving_cars(bridge_t *ptr)
+void leaving_cars(enum color_t color2)
 {
-    mysem_down(&ptr->mutex);
-    if(ptr->color == red)
+    mysem_down(&current->mutex);
+    if(color2 == red)
     {
-        mysem_down(&ptr->mysem_array[0]);
-        if(ptr->cars_on_bridge == ptr->capacity)
-        {
-            printf("Red Cars are leaving the Bridge.\n");
-            ptr->cars_on_bridge --;
-            if(ptr->red_waiting > 0)
-            {
-                ptr->red_waiting --;
-                ptr->cars_on_bridge ++;
-                mysem_up(&ptr->mysem_array[0]);
-            }
-            else
-            {
-                mysem_up(&ptr->mutex);
-            }
-            return;
-        }
-        else if(ptr->cars_on_bridge == 1)
+        mysem_down(&current->mysem_array[0]);
+        if(current->cars_on_bridge == 1)
         {
             printf("Last Car on Bridge is Leaving.\n");
-            ptr->cars_on_bridge --;
-            mysem_up(&ptr->mutex);
+            current->cars_on_bridge --;
+            mysem_up(&current->mutex);
             return;
-        }
-    }
-    else if(ptr->color == blue)
-    {
-        mysem_down(&ptr->mysem_array[1]);
-        if(ptr->cars_on_bridge == ptr->capacity)
+        } 
+        
+        printf("Red Cars are leaving the Bridge.\n");
+        current->cars_on_bridge --;
+        if(current->red_waiting > 0)
         {
-            printf("Blue Cars are leaving the Bridge.\n");
-            ptr->cars_on_bridge --;
-            if(ptr->blue_waiting > 0)
-            {
-                ptr->blue_waiting --;
-                ptr->cars_on_bridge ++;
-                mysem_up(&ptr->mutex);
-                mysem_up(&ptr->mysem_array[1]);
-            }
-            else
-            {
-                mysem_up(&ptr->mutex);
-            }
-            return;
+            current->cars_on_bridge --;
         }
-        else if(ptr->cars_on_bridge == 1)
+        
+        mysem_up(&current->mysem_array[0]);
+        mysem_up(&current->mutex);
+            
+        return;
+        
+    }
+    else if(color2 == blue)
+    {
+        mysem_down(&current->mysem_array[1]);
+        if(current->cars_on_bridge == 1)
         {
             printf("Last Car on Bridge is Leaving.\n");
-            ptr->cars_on_bridge --;
-            mysem_up(&ptr->mutex);
+            current->cars_on_bridge --;
+            mysem_up(&current->mutex);
             return;
-        }   
+        } 
+        
+        printf("Blue Cars are leaving the Bridge.\n");
+        current->cars_on_bridge --;
+        if(current->blue_waiting > 0)
+        {
+            current->blue_waiting ++;
+            current->cars_on_bridge --;
+    
+        }
+        
+        mysem_up(&current->mysem_array[1]);
+        mysem_up(&current->mutex);
+            
+        return;
     }
-    return;
 }
+
 void *Red_Cars(void *argument)
 {
-    bridge_t *ptr;
-
-    ptr = (bridge_t *)argument;
-
-    arriving_cars(ptr);
-    sleep(2);
-    leaving_cars(ptr);
+    arriving_cars( red);
+    sleep(time_in_bridge);
+    leaving_cars(red);
 
     return NULL;
 }
 
 void *Blue_Cars(void *argument)
 {
-    bridge_t *ptr;
 
-    ptr = (bridge_t *)argument;
-
-    arriving_cars(ptr);
-    sleep(2);
-    leaving_cars(ptr);
+    arriving_cars(blue);
+    sleep(time_in_bridge);
+    leaving_cars(blue);
 
     return NULL;
 }
 
 int main(int argc, char *argv[])
 {
-    bridge_t *current;
-    int num_of_sem, semid, capacity, cars;
+    char c;
+    int num_of_sem, semid, capacity, cars, time;
     int i;
     pthread_t bridge;
 
@@ -228,16 +205,40 @@ int main(int argc, char *argv[])
         }
         
     }
+
+    // Cheating the mutex
+    current->mutex.semid = semget(IPC_PRIVATE, num_of_sem, 0666 | IPC_CREAT);
+    if (current->mutex.semid == -1)
+    {
+        perror("ERROR: No semaphore created");
+        exit(EXIT_FAILURE);
+    }
+
+    //Initialize the mutex
+    current->mutex.sem_num = 0;
+    current->mutex.sem_op = 0;
+    if (mysem_init(&current->mutex, 1) == -1)
+    {
+        perror("Error in mysem_init");
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize the struct
+    current->blue_waiting = 0;
+    current->red_waiting = 0;
+    current->cars_on_bridge = 0;
+    time = 0;
     
     // Create Threads    
     while(1)
     {
-        scanf("%d %u %d", &cars, &current->color, &current->time);
+        scanf("%d %c %d", &cars, &c, &time);
         if(cars < 0)
         {
             break;
         }
-        if (current->color == red)
+
+        if (c == 'r')
         {
             for(int i = 0; i < cars; i++)
             {
@@ -252,7 +253,9 @@ int main(int argc, char *argv[])
             } 
         } 
         
-        sleep(current->time);
+        sleep(time);
     }
+
+    sleep(4);
     return 0;
 }

@@ -154,9 +154,9 @@ int main(int argc, char *argv[])
 
         // Check if the number is -1, if it is, close the program
         if (number == -1){
-            for (j = 0; j < 4000000; j++){}
             for ( i = 0; i < num_of_threads; i++)
             {
+                for (j = 0; j < 20000000; j++){}
                 for_worker[i] = -2; // Send the signal to close the program
                 mysem_up(&sem_primes[i]);
             }
