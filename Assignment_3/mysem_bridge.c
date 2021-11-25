@@ -102,7 +102,7 @@ void leaving_cars(enum color_t color2)
         printf("Red Cars are leaving the Bridge.\n");
         current->cars_on_bridge --;
         current->cars_crossed ++;
-        if(current->cars_on_bridge == 1)
+        if(current->cars_on_bridge == 0)
         {
             printf("Last Car on Bridge is Leaving.\n");
             if((current->blue_waiting != 0) || (current->cars_crossed == 2 * current->capacity))
@@ -133,7 +133,7 @@ void leaving_cars(enum color_t color2)
         printf("Blue Cars are leaving the Bridge.\n");
         current->cars_on_bridge --;
         current->cars_crossed ++;
-        if(current->cars_on_bridge == 1)
+        if(current->cars_on_bridge == 0)
         {
             printf("Last Car on Bridge is Leaving.\n");
             if((current->red_waiting != 0) || (current->cars_crossed == 2 * current->capacity))
