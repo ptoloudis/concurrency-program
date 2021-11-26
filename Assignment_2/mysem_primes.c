@@ -69,7 +69,7 @@ void * prime_number(void *argument)
     }
      
     mysem_up(&sem_primes[worker]); // Exit the Thread
-    printf("Seeeeeeee meee %d\n",worker);  
+    //printf("Seeeeeeee meee %d\n",worker);  
 
     return 0;
 }
@@ -78,7 +78,7 @@ void * prime_number(void *argument)
 int main(int argc, char *argv[])
 {
     pthread_t test;
-    int num_of_sem, i, j, number, flag, semid, num_of_threads;
+    int num_of_sem, i, number, flag, semid, num_of_threads;
 
     // Check if the number of arguments is correct
     if(argc != 2)
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     for ( i = 0; i < num_of_threads; i++)
     {
         pthread_create(&test,NULL,prime_number,(void *) &i);
-        for ( j = 0; j < 20000000; j++){} 
+        sleep(1); 
     }
   
     for (i = 0; i < num_of_threads; i++)
@@ -154,10 +154,10 @@ int main(int argc, char *argv[])
 
         // Check if the number is -1, if it is, close the program
         if (number == -1){
-            for (j = 0; j < 80000; j++){}
+            sleep(1);
             for ( i = 0; i < num_of_threads; i++)
             {
-                for (j = 0; j < 100000; j++){}
+                sleep(1);
                 for_worker[i] = -2; // Send the signal to close the program
                 mysem_up(&sem_primes[i]);
             }
@@ -178,15 +178,11 @@ int main(int argc, char *argv[])
             }  
         }
     }
-
-
-    for (j = 0; j < 1000000; j++){} // Wait until all are printed
     
     // Wait for all the Workers to finish
     for (i = 0 ; i < num_of_threads; i++)
     {
         mysem_down(&sem_primes[i]);
-        i++;
     }
     
     // Free All to Malloc and to Semaphore
