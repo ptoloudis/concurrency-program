@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
         sleep(time);
     }
 
-    sleep(2);
+    sleep(10);
     // Destroy the Semaphore
     free(current->mysem_array);
     mysem_destroy(&current->mutex);

@@ -69,7 +69,7 @@ void * prime_number(void *argument)
     }
      
     mysem_up(&sem_primes[worker]); // Exit the Thread
-    //printf("Seeeeeeee meee %d\n",worker);  
+    printf("Seeeeeeee meee %d\n",worker);  
 
     return 0;
 }
