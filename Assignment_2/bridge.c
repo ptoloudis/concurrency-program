@@ -5,14 +5,9 @@ AEM : 03121 & 02995
 */
 
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "my_sem.h"
 
 #define time_in_bridge 2
 #define Red "\033[1;31m"
@@ -30,25 +25,23 @@ typedef struct bridge{
     int cars_on_bridge;
     int cars_crossed;
     int turn;
-    mysem_t *mysem_array;
-    mysem_t mutex; 
 }bridge_t;
 
+pthread_mutex_t mutex;
+pthread_cond_t red_arriving, blue_arriving, leaving;
 bridge_t *current;
 volatile int exit_flag;
 
 void arriving_cars(enum color_t color2)
 {
-    mysem_down(&current->mutex);
+   pthread_mutex_lock(&mutex);
     if(color2 == red)
     {
         current->red_waiting ++;
         if(((current->cars_on_bridge >= current->capacity) || current->turn == 2) || current->blue_waiting != 0)
         {
             printf("Red Cars on the Bridge reached max capacity.\n");
-            mysem_up(&current->mutex);
-            mysem_down(&current->mysem_array[0]);
-            mysem_down(&current->mutex);
+            pthread_cond_wait(&red_arriving, &mutex);
         }
 
         current->turn = 1;
@@ -56,7 +49,7 @@ void arriving_cars(enum color_t color2)
         current->cars_on_bridge ++;
         if((current->red_waiting > 0) && (current->cars_on_bridge < current->capacity))
         {
-            mysem_up(&current->mysem_array[0]);
+            pthread_cond_signal(&red_arriving);
         }
         // printf( Red "Red Cars arriving on the bridge.\n" Clear);
         printf("Red Cars arriving on the bridge.\n");
@@ -67,9 +60,7 @@ void arriving_cars(enum color_t color2)
         if((current->cars_on_bridge >= current->capacity) || current->turn == 1 || current->red_waiting != 0)
         {
             printf("Blue Cars on the Bridge reached max capacity.\n");
-            mysem_up(&current->mutex);
-            mysem_down(&current->mysem_array[1]);
-            mysem_down(&current->mutex);
+            pthread_cond_wait(&blue_arriving, &mutex);
         }
 
         current->turn = 2;
@@ -77,22 +68,22 @@ void arriving_cars(enum color_t color2)
         current->cars_on_bridge ++;
         if((current->blue_waiting > 0) && (current->cars_on_bridge < current->capacity))
         {
-            mysem_up(&current->mysem_array[1]);
+            pthread_cond_signal(&blue_arriving);
         }
         // printf(Blue "Blue Cars arriving on the bridge.\n" Clear);
         printf("Blue Cars arriving on the bridge.\n");
         
     }
-    mysem_up(&current->mutex);
+   pthread_mutex_unlock(&mutex);
     return;
 }
 
 void leaving_cars(enum color_t color2)
 {
-    mysem_down(&current->mutex);
+   pthread_mutex_lock(&mutex);
     if(exit_flag == 1 && current->blue_waiting == 0 && current->red_waiting == 0 && current->cars_on_bridge == 1)
     {
-        mysem_up(&current->mysem_array[2]);
+        pthread_cond_signal(&leaving);
     }
     
     if(color2 == red)
@@ -108,20 +99,20 @@ void leaving_cars(enum color_t color2)
             if((current->blue_waiting != 0) || (current->cars_crossed == 2 * current->capacity))
             {
                 current->turn = 2;
-                mysem_up(&current->mysem_array[1]);
+                pthread_cond_signal(&blue_arriving);
             }
             current->turn = 0;
             current->cars_crossed = 0;
-            mysem_up(&current->mutex);
+            
             return;
         } 
         
         if (current->cars_on_bridge < current->capacity)
         {
-            mysem_up(&current->mysem_array[0]);
+            pthread_cond_signal(&red_arriving);
         }
         
-        mysem_up(&current->mutex);
+       pthread_mutex_unlock(&mutex);
         sleep(1);
         return;
         
@@ -139,20 +130,20 @@ void leaving_cars(enum color_t color2)
             if((current->red_waiting != 0) || (current->cars_crossed == 2 * current->capacity))
             {
                 current->turn = 1;
-                mysem_up(&current->mysem_array[0]);
+                pthread_cond_signal(&red_arriving);
             }
             current->turn = 0;
             current->cars_crossed = 0;
-            mysem_up(&current->mutex);
+           pthread_mutex_unlock(&mutex);
             return;
         } 
     
         if (current->cars_on_bridge < current->capacity )
         {
-            mysem_up(&current->mysem_array[1]);
+            pthread_cond_signal(&blue_arriving);
         }
     
-        mysem_up(&current->mutex);
+       pthread_mutex_unlock(&mutex);
         sleep(1);
         return;
     }
@@ -183,7 +174,7 @@ void *Blue_Cars(void *argument)
 int main(int argc, char *argv[])
 {
     char c;
-    int num_of_sem, semid, capacity, cars, time;
+    int capacity, cars, time;
     int i;
     pthread_t bridge;
 
@@ -205,53 +196,11 @@ int main(int argc, char *argv[])
     }
     current->capacity = capacity;
 
-    // Create the Semaphore
-    num_of_sem = 2;
-    semid = semget(IPC_PRIVATE, num_of_sem, 0666 | IPC_CREAT);
-    if (semid == -1)
-    {
-        perror("ERROR: No semaphore created");
-        exit(EXIT_FAILURE);
-    }
-
-    // Create the Semaphore Array
-    current->mysem_array = (mysem_t *) malloc((num_of_sem) * sizeof(mysem_t));
-    if(current->mysem_array == NULL)
-    {
-        perror("No Malloc done to Array Semaphore");
-        exit(EXIT_FAILURE);
-    }
-
-    // Initialize the Semaphore Array, the Semaphore and the Array of Numbers
-    for (i = 0; i < num_of_sem; i++)
-    {   
-        current->mysem_array[i].sem_num = i; // mysem_array[0] = Red Car      //mysem_array[1] = Blue Car
-        current->mysem_array[i].semid = semid;
-        current->mysem_array[i].sem_op = 0;
-        if (mysem_init(&current->mysem_array[i], 0) == -1)
-        {
-            perror("Error in mysem_init");
-            exit(EXIT_FAILURE);
-        }
-        
-    }
-
-    // Cheating the mutex
-    current->mutex.semid = semget(IPC_PRIVATE, num_of_sem, 0666 | IPC_CREAT);
-    if (current->mutex.semid == -1)
-    {
-        perror("ERROR: No semaphore created");
-        exit(EXIT_FAILURE);
-    }
-
-    //Initialize the mutex
-    current->mutex.sem_num = 0;
-    current->mutex.sem_op = 0;
-    if (mysem_init(&current->mutex, 1) == -1)
-    {
-        perror("Error in mysem_init");
-        exit(EXIT_FAILURE);
-    }
+    // Initialize cond
+    pthread_cond_init(&red_arriving, NULL);
+    pthread_cond_init(&blue_arriving, NULL);
+    pthread_cond_init(&leaving, NULL);
+    pthread_mutex_init(&mutex, NULL);
 
     // Initialize the struct
     current->blue_waiting = 0;
@@ -265,24 +214,25 @@ int main(int argc, char *argv[])
     // Create Threads    
     while(1)
     {
+       pthread_mutex_lock(&mutex);
         scanf("%d %c %d", &cars, &c, &time);
         if(cars < 0)
         {
             exit_flag = 1;
-            mysem_down(&current->mysem_array[2]);
+            pthread_cond_wait(&leaving, &mutex);
             break;
         }
-
+       pthread_mutex_unlock(&mutex);
         if (c == 'r')
         {
-            for(int i = 0; i < cars; i++)
+            for(i = 0; i < cars; i++)
             {
                 pthread_create(&bridge, NULL, Red_Cars, (void*)&current);
             } 
         }
         else
         {
-            for(int i = 0; i < cars; i++)
+            for(i = 0; i < cars; i++)
             {
                 pthread_create(&bridge, NULL, Blue_Cars, (void*)&current);
             } 
@@ -292,10 +242,11 @@ int main(int argc, char *argv[])
     }
 
     sleep(10);
-    // Destroy the Semaphore
-    free(current->mysem_array);
-    mysem_destroy(&current->mutex);
-    mysem_destroy(&current->mysem_array[0]);
+    // Destroy 
+    pthread_cond_destroy(&red_arriving);
+    pthread_cond_destroy(&blue_arriving);
+    pthread_cond_destroy(&leaving);
+    pthread_mutex_destroy(&mutex);
     free(current);
     return 0;
 }
