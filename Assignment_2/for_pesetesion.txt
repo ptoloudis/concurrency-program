@@ -12,7 +12,7 @@ In leaving Cars:
     and make up them
 
 In main:
-    Create and Initialize the semaphore and the struct
+    Create and Initialize the Mutex and Condition Variable
     Read and created the Cars and sleep for second
     if read nagateve int, the make exit flag in 1.
-    Destroy the semaphore and the all pointer.
+    Destroy the Mutex and Condition and the all pointer.

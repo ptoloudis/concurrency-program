@@ -103,7 +103,7 @@ void leaving_cars(enum color_t color2)
             }
             current->turn = 0;
             current->cars_crossed = 0;
-            
+            pthread_mutex_unlock(&mutex);
             return;
         } 
         
@@ -112,7 +112,7 @@ void leaving_cars(enum color_t color2)
             pthread_cond_signal(&red_arriving);
         }
         
-       pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);
         sleep(1);
         return;
         
@@ -134,7 +134,7 @@ void leaving_cars(enum color_t color2)
             }
             current->turn = 0;
             current->cars_crossed = 0;
-           pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex);
             return;
         } 
     
@@ -143,7 +143,7 @@ void leaving_cars(enum color_t color2)
             pthread_cond_signal(&blue_arriving);
         }
     
-       pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);
         sleep(1);
         return;
     }
@@ -214,15 +214,21 @@ int main(int argc, char *argv[])
     // Create Threads    
     while(1)
     {
-       pthread_mutex_lock(&mutex);
         scanf("%d %c %d", &cars, &c, &time);
+        pthread_mutex_lock(&mutex);
         if(cars < 0)
         {
             exit_flag = 1;
+            if (current->cars_on_bridge == 0 && current->blue_waiting == 0 && current->red_waiting == 0)
+            {
+                pthread_mutex_unlock(&mutex);
+                break;
+            }            
             pthread_cond_wait(&leaving, &mutex);
+            pthread_mutex_unlock(&mutex);
             break;
         }
-       pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);
         if (c == 'r')
         {
             for(i = 0; i < cars; i++)
@@ -237,11 +243,10 @@ int main(int argc, char *argv[])
                 pthread_create(&bridge, NULL, Blue_Cars, (void*)&current);
             } 
         } 
-        
         sleep(time);
     }
 
-    sleep(10);
+    sleep(1);
     // Destroy 
     pthread_cond_destroy(&red_arriving);
     pthread_cond_destroy(&blue_arriving);
