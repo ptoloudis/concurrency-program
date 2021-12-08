@@ -1,44 +1,20 @@
-Have mysem_t struct.
-The struct have:
-    the semaphore id
-    the semaphore number    
-    the semaphore is up or down
-    the semaphore is initialized or not
+In MAIN:
+    Create Group Semaphores with size of the Thread and Initialize the Semaphore values 0.
+    Create the Threads and start them.
+    
+    In loop:
+        Read the input from the user and send it to the threads.
+        If values is -1 then the program notified the threads to exit.
+    
+    Wait to print the output of the threads.
+    Wait for the threads to exit.
+    Destroy the Semaphores and free all pointers.
 
-In init:
-    Check if the n is right valid
-    if not return 0
+In Threads:
+    Wait to main to start the program.
 
-    Check if the semaphore is initialized
-    if yes return 0
-
-    Initialize the semaphore
-    Write to the struct is incremented and  return 1
-
-In down:
-    Check if the semaphore is initialized
-    if not return -1
-
-    Make the union semaphore down
-
-    Decrement the semaphore
-    Write to the struct is decremented and return 1
-
-In up:
-    Check if the semaphore is initialized
-    if not return -1
-
-    Check the semaphore is up
-    if yes return 0
-
-    Make the union semaphore up
-
-    Increment the semaphore
-    Write to the struct is incremented and return 1
-
-In destroy:
-    Check if the semaphore is initialized
-    if not return -1
-
-    Destroy the semaphore
-    If the struct is destroyed return 1
+    In loop:
+        Read the input from the main and prime number calculator.
+        If values is -2 then the program go to exit.
+        
+    Notified the main to exit.
