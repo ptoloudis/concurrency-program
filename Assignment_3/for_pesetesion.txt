@@ -1,5 +1,5 @@
 In MAIN:
-    Create Group Semaphores and Initialize the Semaphore values 0 and Initialize the Mutex Semaphore in the value 1
+    Initialize the Mutex and the Condition Variables
     Create the Train Thread and start them
     
     Read in the standard input and create the Passengers Threads
@@ -9,7 +9,7 @@ In MAIN:
     Wait all Passengers to make train route and to get off the park
     The program wait to print all
     
-    Close the Semaphores and free the memory
+    Destroy the Mutex and Condition and free the memory
     Exit the program
 
 In TRAIN:

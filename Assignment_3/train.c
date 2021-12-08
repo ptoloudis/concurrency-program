@@ -44,7 +44,7 @@ void *fill_train(void *ptr)
             printf("Kill the train\n");
             exit_train = 1;
             pthread_cond_signal(&train_ready);
-            pthread_cond_signal(&leaving);
+            pthread_cond_signal(&leaving_passengers);
         }
         else
         {
@@ -62,7 +62,6 @@ void *fill_train(void *ptr)
     {
         pthread_cond_signal(&arriving_passengers);
     }
-    pthread_mutex_unlock(&mutex);
 
     // If the train is full, start the train
     if(tmp->boarded_passengers == passenger_capacity)  
@@ -102,13 +101,11 @@ void *start_train_route(void *ptr)
         if(exit_train == 1)
         {
             // Exit the program
+            printf("The train is DEAD\n");
             pthread_cond_signal(&leaving);
             pthread_mutex_unlock(&mutex);
-            
-            printf("The train is DEAD\n");
             return 0;
         }
-        pthread_mutex_unlock(&mutex);
         
         if((tmp->waiting_passengers == 0) && tmp->boarded_passengers < passenger_capacity)
         {
@@ -121,7 +118,7 @@ void *start_train_route(void *ptr)
 
         // Get off the Train
         pthread_cond_signal(&leaving_passengers);
-
+        pthread_mutex_unlock(&mutex);
     }
     return 0;
 }
@@ -165,6 +162,7 @@ int main(int argc, char *argv[])
         {
             exit_flag = 1;
             pthread_create(&train, NULL, fill_train, (void*)&ptr); // killer
+
             break;
         }
         for(i = 0; i < passengers; i++)
@@ -176,9 +174,10 @@ int main(int argc, char *argv[])
     }
 
     // Wait for the Threads to finish
-    pthread_cond_signal(&leaving);
-    sleep(2);
-    
+    pthread_mutex_lock(&mutex);
+    pthread_cond_wait(&leaving, &mutex);
+    pthread_mutex_unlock(&mutex);
+    sleep(3);
     //Destroy the Semaphore
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&arriving_passengers);
