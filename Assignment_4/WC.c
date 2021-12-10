@@ -44,7 +44,7 @@ void arriving_people(enum gender_t gender)
         if(((current->people_in_WC >= current->capacity) || current->turn == 2) || current->men_waiting != 0)
         {
             printf(Red "Women: \n" Clear);
-            printf("Red Cars on the Bridge reached max capacity.\n");
+            printf("Women in WC reached max capacity.\n");
             pthread_cond_wait(&women_arriving, &mutex);
         }
 
@@ -59,7 +59,7 @@ void arriving_people(enum gender_t gender)
         }
 
         printf(Red "Women: \n" Clear);
-        printf("Red Cars arriving on the bridge.\n");
+        printf("Women arriving in WC.\n");
     }
     // Blue Cars Arriving but it's not their Turn to Cross
     else 
@@ -68,7 +68,7 @@ void arriving_people(enum gender_t gender)
         if((current->people_in_WC >= current->capacity) || current->turn == 1 || current->women_waiting != 0)
         {
             printf(Blue "Men: \n" Clear);
-            printf("Blue Cars on the Bridge reached max capacity.\n");
+            printf("Men in WC reached max capacity.\n");
             pthread_cond_wait(&men_arriving, &mutex);
         }
 
@@ -82,7 +82,7 @@ void arriving_people(enum gender_t gender)
             pthread_cond_signal(&men_arriving);
         }
         printf(Blue "Men: \n" Clear);
-        printf("Blue Cars arriving on the bridge.\n");
+        printf("Men arriving in WC.\n");
         
     }
 
@@ -102,12 +102,12 @@ void leaving_people(enum gender_t gender)
     if(gender == female)
     {
         printf(Red "Women: \n" Clear);
-        printf("Red Cars are leaving the Bridge.\n");
+        printf("Women are leaving the WC.\n");
         current->people_in_WC --;
         current->people_crossed ++;
         if(current->people_in_WC == 0)
         {
-            printf("Last Car on Bridge is Leaving.\n");
+            printf("Last Person in WC is Leaving.\n");
             if((current->men_waiting != 0) || (current->people_crossed == 2 * current->capacity))
             {
                 current->turn = 2;
@@ -132,12 +132,12 @@ void leaving_people(enum gender_t gender)
     else 
     {
         printf(Blue "Men: \n" Clear);
-        printf("Blue Cars are leaving the Bridge.\n");
+        printf("Men are leaving the WC.\n");
         current->people_in_WC --;
         current->people_crossed ++;
         if(current->people_in_WC == 0)
         {
-            printf("Last Car on Bridge is Leaving.\n");
+            printf("Last Person in WC is Leaving.\n");
             if((current->women_waiting != 0) || (current->people_crossed == 2 * current->capacity))
             {
                 current->turn = 1;
