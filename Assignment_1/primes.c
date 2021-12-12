@@ -10,13 +10,13 @@ AEM : 03121 & 02995
 #include <pthread.h>
 #include <math.h>
 #include <time.h>
-#include "my_sem.h"
 
-mysem_t *sem_primes;
+pthread_mutex_t mutex;
+pthread_cond_t *cond;
 int *for_worker;
 /*  > 0 :Number to be checked
-    -1  :Number to be notified not working
-    -2  :Number to be closed
+    -1  :Number to be closed
+    -2  :Number to be notified not working
 */
 
 /******************* PRIME NUMBER *******************/
@@ -26,12 +26,13 @@ void * prime_number(void *argument)
     
     worker = *(int *)argument;
     printf("Worker %d\n",worker); // Print the Threads we use as Workers 
-    mysem_down(&sem_primes[worker]); // Up the semaphore to be used by the Worker
+    pthread_mutex_lock(&mutex);
+    //pthread_cond_wait(&cond[worker], &mutex);
 
     while (1)
     {                     
-        mysem_down(&sem_primes[worker]);     
-        if (for_worker[worker] == -2)
+        pthread_cond_wait(&cond[worker], &mutex);     
+        if (for_worker[worker] == -1)
         {
             break;
         } 
@@ -65,11 +66,11 @@ void * prime_number(void *argument)
             printf("%d: 0 by worker %d\n", number,worker);
         } 
         
-        for_worker[worker] = -1; // Set the status of the worker to be notified             
+        for_worker[worker] = -2; // Set the status of the worker to be notified             
     }
-     
-    mysem_up(&sem_primes[worker]); // Exit the Thread
-    printf("Seeeeeeee meee %d\n",worker);  
+    printf("Seeeeeeee meee %d\n",worker);
+    pthread_mutex_unlock(&mutex);
+    pthread_cond_signal(&cond[worker]); // Exit the Thread 
 
     return 0;
 }
@@ -78,7 +79,7 @@ void * prime_number(void *argument)
 int main(int argc, char *argv[])
 {
     pthread_t test;
-    int num_of_sem, i, number, flag, semid, num_of_threads;
+    int num_of_threads, i, number, flag;
 
     // Check if the number of arguments is correct
     if(argc != 2)
@@ -91,35 +92,20 @@ int main(int argc, char *argv[])
         num_of_threads = atoi(argv[1]);
     }
 
-    // Create the Semaphore
-    num_of_sem = num_of_threads;
-    semid = semget(IPC_PRIVATE, num_of_sem, 0666 | IPC_CREAT);
-    if (semid == -1)
+    // Initialize the Mutex and the Condition Variable
+    cond = (pthread_cond_t *)malloc((num_of_threads)*sizeof(pthread_cond_t));
+    if (cond == NULL)
     {
-        perror("ERROR: No semaphore created");
+        perror("ERROR : Not enough memory\n");
         exit(EXIT_FAILURE);
     }
 
-    // Create the Semaphore Array
-    sem_primes = (mysem_t *) malloc((num_of_sem) * sizeof(mysem_t));
-    if(sem_primes == NULL)
+    for (i = 0; i < num_of_threads; i++)
     {
-        perror("No Malloc done to Array Semaphore");
-        exit(EXIT_FAILURE);
+        pthread_cond_init(&cond[i], NULL);
     }
 
-    // Initialize the Semaphore Array and the Semaphore
-    for ( i = 0; i < num_of_sem; i++)
-    {   
-        sem_primes[i].sem_num = i;
-        sem_primes[i].semid = semid;
-        sem_primes[i].sem_op = 0;
-        if (mysem_init(&sem_primes[i], 0) == -1)
-        {
-            perror("Error in mysem_init");
-            exit(EXIT_FAILURE);
-        } 
-    }
+    pthread_mutex_init(&mutex, NULL);  
 
     // Malloc for the array of numbers to be checked
     for_worker = (int *) malloc(num_of_threads * sizeof(int));
@@ -131,7 +117,7 @@ int main(int argc, char *argv[])
 
     for ( i = 0; i < num_of_threads; i++)
     {
-        for_worker[i] = -1;
+        for_worker[i] = -2;
     }    
 
     
@@ -139,14 +125,15 @@ int main(int argc, char *argv[])
     for ( i = 0; i < num_of_threads; i++)
     {
         pthread_create(&test,NULL,prime_number,(void *) &i);
-        sleep(1); 
-    }
-  
-    for (i = 0; i < num_of_threads; i++)
-    {
-        mysem_up(&sem_primes[i]);
+        sleep(0.5); 
     }
 
+    // for ( i = 0; i < num_of_threads; i++)
+    // {
+    //     pthread_cond_signal(&cond[i]);
+    // }
+
+    //printf("hi\n");
     while (1)
     {
         flag = 1;
@@ -154,12 +141,15 @@ int main(int argc, char *argv[])
 
         // Check if the number is -1, if it is, close the program
         if (number == -1){
-            sleep(1);
+            sleep(1.5);
             for ( i = 0; i < num_of_threads; i++)
             {
                 sleep(1);
-                for_worker[i] = -2; // Send the signal to close the program
-                mysem_up(&sem_primes[i]);
+                pthread_mutex_lock(&mutex);
+                for_worker[i] = -1; // Send the signal to close the program
+                pthread_cond_signal(&cond[i]);
+                pthread_cond_wait(&cond[i], &mutex);
+                pthread_mutex_unlock(&mutex);
             }
             break;
         }
@@ -168,10 +158,12 @@ int main(int argc, char *argv[])
         {
             for (i = 0; i < num_of_threads; i++)
             {
-                if( for_worker[i] == -1)
+                if( for_worker[i] == -2)
                 {
+                    pthread_mutex_lock(&mutex);
                     for_worker[i] = number; //Send the number to the Worker
-                    mysem_up(&sem_primes[i]);
+                    pthread_cond_signal(&cond[i]);
+                    pthread_mutex_unlock(&mutex);
                     flag = 0;
                     break;
                 }
@@ -179,16 +171,10 @@ int main(int argc, char *argv[])
         }
     }
     
-    // Wait for all the Workers to finish
-    for (i = 0 ; i < num_of_threads; i++)
-    {
-        mysem_down(&sem_primes[i]);
-    }
-    
     // Free All to Malloc and to Semaphore
-    mysem_destroy(&sem_primes[0]);
     free(for_worker);
-    free(sem_primes);
+    pthread_cond_destroy(&cond[0]);
+    pthread_mutex_destroy(&mutex);
 
     return 0;
 }

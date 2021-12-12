@@ -2,7 +2,7 @@ CC = gcc
 CCFLAGS = -Wall -g 
 
 WC: WC.c
-	$(CC)  WC.c -o WC -lpthread 
+	$(CC) $(CCFLAGS)  WC.c -o WC -lpthread 
 
 .PHONY: clean
 clean:

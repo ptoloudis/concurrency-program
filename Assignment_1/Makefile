@@ -1,15 +1,8 @@
 CC = gcc
-CCFLAGS = -Wall -g 
-OBJ = mysem_primes.o mysem.o
+CCFLAGS = -Wall -g
 
-mysem_primes: $(OBJ)
-	$(CC) $(OBJ) -o mysem_primes -lpthread -lm
-
-mysem_primes.o: mysem_primes.c my_sem.h
-	$(CC) $(CCFLAGS) -c $<
-
-mysem.o: mysem.c my_sem.h
-	$(CC) $(CCFLAGS) -c $<
+primes: primes.c
+	$(CC) $(CCFLAGS) primes.c -o primes -lpthread -lm
 
 .PHONY: clean
 clean:

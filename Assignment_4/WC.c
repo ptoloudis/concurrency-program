@@ -9,7 +9,7 @@ AEM : 03121 & 02995
 #include <unistd.h>
 #include <pthread.h>
 
-#define time_in_bridge 2
+#define time_in_WC 2
 #define Red "\033[1;31m"
 #define Blue "\033[1;34m"
 #define Clear "\033[0m"
@@ -17,13 +17,12 @@ AEM : 03121 & 02995
 enum gender_t {female, male};
 
 typedef struct WC{
-    int capacity;  // Total Capacity on the Bridge per Passing Time
+    int capacity;  // Total Capacity on the WC per Passing Time
     enum gender_t gender;
-    int women_waiting; //Amount of Red Cars Waiting
-    int men_waiting; // Amount of Blue Cars Waiting
-    int people_in_WC; // Amount of Cars on the Bridge
-    int people_crossed; // Amount of Cars Crossed the Bridge 
-    int turn; // Which Car should cross the Bridge Red = 1 Blue = 2 Restart Counting = 0
+    int women_waiting; //Amount of Female Waiting
+    int men_waiting; // Amount of Men Waiting
+    int people_in_WC; // Amount the in WC
+    int turn; // Which Car should cross the Bridge Female = 1, Men = 2, Restart Counting = 0
 }WC_t;
 
 WC_t *current;
@@ -37,13 +36,13 @@ void arriving_people(enum gender_t gender)
 {
     pthread_mutex_lock(&mutex);
 
-    // Red Cars are Arriving but it's not their Turn to Cross
+    // female are Arriving but it's not their Turn to Cross
     if(gender == female)
     {
         current->women_waiting ++;
         if(((current->people_in_WC >= current->capacity) || current->turn == 2) || current->men_waiting != 0)
         {
-            printf(Red "Women: \n" Clear);
+            printf(Red "Women: " Clear);
             printf("Women in WC reached max capacity.\n");
             pthread_cond_wait(&women_arriving, &mutex);
         }
@@ -52,22 +51,22 @@ void arriving_people(enum gender_t gender)
         current->women_waiting --;
         current->people_in_WC ++;
 
-        // Red Cars should Cross
+        // female should Cross
         if((current->women_waiting > 0) && (current->people_in_WC < current->capacity))
         {
             pthread_cond_signal(&women_arriving);
         }
 
-        printf(Red "Women: \n" Clear);
+        printf(Red "Women: " Clear);
         printf("Women arriving in WC.\n");
     }
-    // Blue Cars Arriving but it's not their Turn to Cross
+    // men Arriving but it's not their Turn to Cross
     else 
     {
         current->men_waiting ++;
         if((current->people_in_WC >= current->capacity) || current->turn == 1 || current->women_waiting != 0)
         {
-            printf(Blue "Men: \n" Clear);
+            printf(Blue "Men: " Clear);
             printf("Men in WC reached max capacity.\n");
             pthread_cond_wait(&men_arriving, &mutex);
         }
@@ -76,12 +75,12 @@ void arriving_people(enum gender_t gender)
         current->men_waiting --;
         current->people_in_WC ++;
 
-        // Blue Cars should Cross
+        // men should Cross
         if((current->men_waiting > 0) && (current->people_in_WC < current->capacity))
         {
             pthread_cond_signal(&men_arriving);
         }
-        printf(Blue "Men: \n" Clear);
+        printf(Blue "Men: " Clear);
         printf("Men arriving in WC.\n");
         
     }
@@ -101,20 +100,18 @@ void leaving_people(enum gender_t gender)
     
     if(gender == female)
     {
-        printf(Red "Women: \n" Clear);
+        printf(Red "Women: " Clear);
         printf("Women are leaving the WC.\n");
         current->people_in_WC --;
-        current->people_crossed ++;
         if(current->people_in_WC == 0)
         {
             printf("Last Person in WC is Leaving.\n");
-            if((current->men_waiting != 0) || (current->people_crossed == 2 * current->capacity))
+            if((current->men_waiting != 0))
             {
                 current->turn = 2;
                 pthread_cond_signal(&men_arriving);
             }
             current->turn = 0;
-            current->people_crossed = 0;
             pthread_mutex_unlock(&mutex);
             return;
         } 
@@ -131,20 +128,18 @@ void leaving_people(enum gender_t gender)
     }
     else 
     {
-        printf(Blue "Men: \n" Clear);
+        printf(Blue "Men: " Clear);
         printf("Men are leaving the WC.\n");
         current->people_in_WC --;
-        current->people_crossed ++;
         if(current->people_in_WC == 0)
         {
             printf("Last Person in WC is Leaving.\n");
-            if((current->women_waiting != 0) || (current->people_crossed == 2 * current->capacity))
+            if((current->women_waiting != 0))
             {
                 current->turn = 1;
                 pthread_cond_signal(&women_arriving);
             }
             current->turn = 0;
-            current->people_crossed = 0;
             pthread_mutex_unlock(&mutex);
             return;
         } 
@@ -163,7 +158,7 @@ void leaving_people(enum gender_t gender)
 void *Women(void *argument)
 {
     arriving_people(female);
-    sleep(time_in_bridge);
+    sleep(time_in_WC);
     leaving_people(female);
 
     return NULL;
@@ -172,7 +167,7 @@ void *Women(void *argument)
 void *Men(void *argument)
 {
     arriving_people(male);
-    sleep(time_in_bridge);
+    sleep(time_in_WC);
     leaving_people(male);
 
     return NULL;
@@ -214,7 +209,6 @@ int main(int argc, char *argv[])
     current->men_waiting = 0;
     current->women_waiting = 0;
     current->people_in_WC = 0;
-    current->people_crossed = 0;
     current->turn = 0;
     exit_flag = 0;
     time = 0;
