@@ -11,13 +11,15 @@ AEM : 03121 & 02995
 #include <math.h>
 #include <time.h>
 
+
 pthread_mutex_t mutex;
-pthread_cond_t *cond;
+pthread_cond_t *cond,full;
 int *for_worker;
 /*  > 0 :Number to be checked
     -1  :Number to be closed
     -2  :Number to be notified not working
 */
+int v;
 
 /******************* PRIME NUMBER *******************/
 void * prime_number(void *argument)
@@ -27,7 +29,6 @@ void * prime_number(void *argument)
     worker = *(int *)argument;
     printf("Worker %d\n",worker); // Print the Threads we use as Workers 
     pthread_mutex_lock(&mutex);
-    //pthread_cond_wait(&cond[worker], &mutex);
 
     while (1)
     {                     
@@ -65,7 +66,10 @@ void * prime_number(void *argument)
         {
             printf("%d: 0 by worker %d\n", number,worker);
         } 
-        
+
+        if (v == 0)
+            pthread_cond_signal(&full);
+        v--;
         for_worker[worker] = -2; // Set the status of the worker to be notified             
     }
     printf("Seeeeeeee meee %d\n",worker);
@@ -79,7 +83,7 @@ void * prime_number(void *argument)
 int main(int argc, char *argv[])
 {
     pthread_t test;
-    int num_of_threads, i, number, flag;
+    int num_of_threads, i, number;
 
     // Check if the number of arguments is correct
     if(argc != 2)
@@ -106,6 +110,7 @@ int main(int argc, char *argv[])
     }
 
     pthread_mutex_init(&mutex, NULL);  
+    pthread_cond_init(&full, NULL);
 
     // Malloc for the array of numbers to be checked
     for_worker = (int *) malloc(num_of_threads * sizeof(int));
@@ -120,7 +125,8 @@ int main(int argc, char *argv[])
         for_worker[i] = -2;
     }    
 
-    
+    v = (-1)*num_of_threads;
+
     // Creation of the Worker and Delay until All Workers are Ready to Work
     for ( i = 0; i < num_of_threads; i++)
     {
@@ -128,15 +134,8 @@ int main(int argc, char *argv[])
         sleep(0.5); 
     }
 
-    // for ( i = 0; i < num_of_threads; i++)
-    // {
-    //     pthread_cond_signal(&cond[i]);
-    // }
-
-    //printf("hi\n");
     while (1)
     {
-        flag = 1;
         scanf("%d",&number);
 
         // Check if the number is -1, if it is, close the program
@@ -153,27 +152,37 @@ int main(int argc, char *argv[])
             }
             break;
         }
-        
-        while (flag == 1)
+
+        pthread_mutex_lock(&mutex);
+        if (v == 0)
         {
-            for (i = 0; i < num_of_threads; i++)
+            pthread_cond_wait(&full, &mutex);
+        }    
+        pthread_mutex_unlock(&mutex);
+
+        // Check if the number is -2, if it is, notify the worker to continue
+        for (i = 0; i < num_of_threads; i++)
+        {
+            if( for_worker[i] == -2)
             {
-                if( for_worker[i] == -2)
-                {
-                    pthread_mutex_lock(&mutex);
-                    for_worker[i] = number; //Send the number to the Worker
-                    pthread_cond_signal(&cond[i]);
-                    pthread_mutex_unlock(&mutex);
-                    flag = 0;
-                    break;
-                }
-            }  
-        }
+                pthread_mutex_lock(&mutex);
+                v++;
+                for_worker[i] = number; //Send the number to the Worker
+                pthread_cond_signal(&cond[i]);
+                pthread_mutex_unlock(&mutex);
+                break;
+            }
+        }  
+        
     }
     
     // Free All to Malloc and to Semaphore
     free(for_worker);
-    pthread_cond_destroy(&cond[0]);
+    for ( i = 0; i < num_of_threads; i++)
+    {
+        pthread_cond_destroy(&cond[i]);
+    }
+    pthread_cond_destroy(&full);
     pthread_mutex_destroy(&mutex);
 
     return 0;
