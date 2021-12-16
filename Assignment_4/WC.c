@@ -40,7 +40,7 @@ void arriving_people(enum gender_t gender)
     if(gender == female)
     {
         current->women_waiting ++;
-        if(((current->people_in_WC >= current->capacity) || current->turn == 2) || current->men_waiting != 0)
+        if((current->people_in_WC >= current->capacity) || current->men_waiting != 0)
         {
             printf(Red "Women: " Clear);
             printf("Women in WC reached max capacity.\n");
@@ -64,11 +64,12 @@ void arriving_people(enum gender_t gender)
     else 
     {
         current->men_waiting ++;
-        if((current->people_in_WC >= current->capacity) || current->turn == 1 || current->women_waiting != 0)
+        while((current->people_in_WC >= current->capacity) || current->turn == 1 || current->women_waiting != 0)
         {
             printf(Blue "Men: " Clear);
             printf("Men in WC reached max capacity.\n");
             pthread_cond_wait(&men_arriving, &mutex);
+            printf(Blue "Men: " Clear "Men check again.\n");
         }
 
         current->turn = 2;
@@ -82,6 +83,7 @@ void arriving_people(enum gender_t gender)
         }
         printf(Blue "Men: " Clear);
         printf("Men arriving in WC.\n");
+        fflush(stdout);
         
     }
 
