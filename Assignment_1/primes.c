@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     for ( i = 0; i < num_of_threads; i++)
     {
         pthread_create(&test,NULL,prime_number,(void *) &i);
-        sleep(0.5); 
+        sleep(1); 
     }
 
     while (1)
