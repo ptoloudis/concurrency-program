@@ -7,9 +7,7 @@
 #define DEFAULT_STACK_SIZE 64
 #define DEFAULT_ARGUMENTS 0x1
 
-
-co_t *curr = NULL, *nxt = NULL;
-
+co_t *curr, *nxt ;
 
 int mycoroutines_init(co_t *main) {
   if (!getcontext(&main->co)){
@@ -55,12 +53,3 @@ int mycoroutines_destroy(co_t *coroutine){
 
   return 0;
 }
-
-
-
-
-
-
-
-
-
