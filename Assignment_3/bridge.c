@@ -7,7 +7,7 @@ AEM : 03121 & 02995
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
+#include "header.h"
 
 #define time_in_bridge 2
 #define Red "\033[1;31m"
@@ -35,7 +35,7 @@ pthread_cond_t red_arriving, blue_arriving, exit_mtx;
 
 void arriving_cars(enum color_t color)
 {
-    pthread_mutex_lock(&mutex);
+    mythreads_tuple_in("%s","mutex");
 
     // Red Cars are Arriving but it's not their Turn to Cross
     if(color == red)
@@ -45,7 +45,7 @@ void arriving_cars(enum color_t color)
         {
             printf(Red "Red Cars: \n" Clear);
             printf("Red Cars on the Bridge reached max capacity.\n");
-            pthread_cond_wait(&red_arriving, &mutex);
+            mythreads_tuple_in("%s","red_waiting");
         }
 
         current->turn = 1;
@@ -55,7 +55,7 @@ void arriving_cars(enum color_t color)
         // Red Cars should Cross
         if((current->red_waiting > 0) && (current->cars_on_bridge < current->capacity))
         {
-            pthread_cond_signal(&red_arriving);
+            mythreads_tuple_out("%s","red_waiting");
         }
 
         printf(Red "Red Cars: \n" Clear);
@@ -69,7 +69,7 @@ void arriving_cars(enum color_t color)
         {
             printf(Blue "Blue Cars: \n" Clear);
             printf("Blue Cars on the Bridge reached max capacity.\n");
-            pthread_cond_wait(&blue_arriving, &mutex);
+            mythreads_tuple_in("%s","blue_waiting");
         }
 
         current->turn = 2;
@@ -79,25 +79,25 @@ void arriving_cars(enum color_t color)
         // Blue Cars should Cross
         if((current->blue_waiting > 0) && (current->cars_on_bridge < current->capacity))
         {
-            pthread_cond_signal(&blue_arriving);
+              mythreads_tuple_out("%s","blue_waiting");
         }
         printf(Blue "Blue Cars: \n" Clear);
         printf("Blue Cars arriving on the bridge.\n");
         
     }
 
-    pthread_mutex_unlock(&mutex);
+    mythreads_tuple_out("%s","mutex");
     
     return;
 }
 
 void leaving_cars(enum color_t color)
 {
-    pthread_mutex_lock(&mutex);
+    mythreads_tuple_in("%s","mutex");
     if(exit_flag == 1 && current->blue_waiting == 0 && current->red_waiting == 0 && current->cars_on_bridge == 1)
     {
-        pthread_cond_signal(&exit_mtx);
-    }
+        mythreads_tuple_out("%s","exit_mtx");
+    }   
     
     if(color == red)
     {
@@ -111,20 +111,20 @@ void leaving_cars(enum color_t color)
             if((current->blue_waiting != 0) || (current->cars_crossed == 2 * current->capacity))
             {
                 current->turn = 2;
-                pthread_cond_signal(&blue_arriving);
+                mythreads_tuple_out("%s","blue_waiting");
             }
             current->turn = 0;
             current->cars_crossed = 0;
-            pthread_mutex_unlock(&mutex);
+            mythreads_tuple_out("%s","mutex");
             return;
         } 
         
         if (current->cars_on_bridge < current->capacity)
         {
-            pthread_cond_signal(&red_arriving);
+            mythreads_tuple_out("%s","red_waiting");
         }
         
-        pthread_mutex_unlock(&mutex);
+        mythreads_tuple_out("%s","mutex");
         sleep(1);
         return;
         
@@ -141,20 +141,20 @@ void leaving_cars(enum color_t color)
             if((current->red_waiting != 0) || (current->cars_crossed == 2 * current->capacity))
             {
                 current->turn = 1;
-                pthread_cond_signal(&red_arriving);
+                mythreads_tuple_out("%s","red_waiting");
             }
             current->turn = 0;
             current->cars_crossed = 0;
-            pthread_mutex_unlock(&mutex);
+            mythreads_tuple_out("%s","mutex");
             return;
         } 
     
         if (current->cars_on_bridge < current->capacity )
         {
-            pthread_cond_signal(&blue_arriving);
+            mythreads_tuple_out("%s","blue_waiting");
         }
     
-        pthread_mutex_unlock(&mutex);
+        mythreads_tuple_out("%s","mutex");
         sleep(1);
         return;
     }
@@ -183,8 +183,8 @@ int main(int argc, char *argv[])
 {
     char c;
     int capacity, cars, time;
-    int i;
-    pthread_t bridge;
+    int i, j;
+    thr_t *bridge;
 
     if(argc != 2)
     {
@@ -204,11 +204,9 @@ int main(int argc, char *argv[])
     }
     current->capacity = capacity;
 
-    // Initialize Conditions
-    pthread_cond_init(&red_arriving, NULL);
-    pthread_cond_init(&blue_arriving, NULL);
-    pthread_cond_init(&exit_mtx, NULL);
-    pthread_mutex_init(&mutex, NULL);
+    mythreads_init();
+    mythreads_tuple_out("%s","mutex");
+    
 
     // Initialize Struct's Values
     current->blue_waiting = 0;
@@ -218,49 +216,56 @@ int main(int argc, char *argv[])
     current->turn = 0;
     exit_flag = 0;
     time = 0;
+    j = 0;
     
     // Create Threads    
     while(1)
     {
         scanf("%d %c %d", &cars, &c, &time);
-        pthread_mutex_lock(&mutex);
+        mythreads_tuple_in("%s","mutex");
         if(cars < 0)
         {
             exit_flag = 1;
             if (current->cars_on_bridge == 0 && current->blue_waiting == 0 && current->red_waiting == 0)
             {
-                pthread_mutex_unlock(&mutex);
+                mythreads_tuple_out("%s","mutex");
                 break;
             }            
-            pthread_cond_wait(&exit_mtx, &mutex);
-            pthread_mutex_unlock(&mutex);
+            mythreads_tuple_out("%s","mutex");
+            mythreads_tuple_in("%s","exit_mtx");
             break;
         }
-        pthread_mutex_unlock(&mutex);
+        mythreads_tuple_out("%s","mutex");
+
+        bridge = (thr_t *) realloc( bridge ,sizeof(thr_t) *(cars+j));
+
         if (c == 'r')
         {
             for(i = 0; i < cars; i++)
             {
-                pthread_create(&bridge, NULL, Red_Cars, (void*)&current);
+                mythreads_create(&bridge[j+i], (void*)&Red_Cars, NULL);
             } 
         }
         else
         {
             for(i = 0; i < cars; i++)
             {
-                pthread_create(&bridge, NULL, Blue_Cars, (void*)&current);
+                mythreads_create(&bridge[j+i], (void*)&Blue_Cars, NULL);
             } 
         } 
+        j = j + cars;
         sleep(time);
     }
 
     sleep(1);
 
     // Destroy Monitors
-    pthread_cond_destroy(&red_arriving);
-    pthread_cond_destroy(&blue_arriving);
-    pthread_cond_destroy(&exit_mtx);
-    pthread_mutex_destroy(&mutex);
+    for ( i = 0; i < j; i++)
+    {
+        mythreads_join(&bridge[i]);
+        mythreads_destroy(&bridge[i]);
+    }
+    
 
     // Free Allocated Memory 
     free(current);

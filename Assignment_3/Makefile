@@ -1,8 +1,15 @@
 CC = gcc
-CCFLAGS = -Wall -g 
+CCFLAGS = -Wall -g
+OBJ = bridge.o library.o
 
-bridge: bridge.c
-	$(CC)  bridge.c -o bridge -lpthread 
+bridge: $(OBJ)
+	$(CC) $(OBJ) -o bridge
+
+library.o: library.c header.h
+	$(CC) $(CCFLAGS) -c $< 
+
+bridge.o: bridge.c header.h
+	$(CC) $(CCFLAGS) -c $<
 
 .PHONY: clean
 clean:
