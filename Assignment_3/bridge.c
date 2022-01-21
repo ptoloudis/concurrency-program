@@ -29,10 +29,6 @@ typedef struct bridge{
 bridge_t *current;
 volatile int exit_flag;
 
-pthread_mutex_t mutex;
-pthread_cond_t red_arriving, blue_arriving, exit_mtx;
-
-
 void arriving_cars(enum color_t color)
 {
     mythreads_tuple_in("%s","mutex");
@@ -45,7 +41,9 @@ void arriving_cars(enum color_t color)
         {
             printf(Red "Red Cars: \n" Clear);
             printf("Red Cars on the Bridge reached max capacity.\n");
+            mythreads_tuple_out("%s","mutex");
             mythreads_tuple_in("%s","red_waiting");
+            mythreads_tuple_in("%s","mutex");
         }
 
         current->turn = 1;
@@ -69,7 +67,9 @@ void arriving_cars(enum color_t color)
         {
             printf(Blue "Blue Cars: \n" Clear);
             printf("Blue Cars on the Bridge reached max capacity.\n");
+            mythreads_tuple_out("%s","mutex");
             mythreads_tuple_in("%s","blue_waiting");
+            mythreads_tuple_in("%s","mutex");
         }
 
         current->turn = 2;
@@ -101,7 +101,7 @@ void leaving_cars(enum color_t color)
     
     if(color == red)
     {
-        printf(Red "Blue Cars: \n" Clear);
+        printf(Red "Red Cars: \n" Clear);
         printf("Red Cars are leaving the Bridge.\n");
         current->cars_on_bridge --;
         current->cars_crossed ++;
@@ -206,6 +206,7 @@ int main(int argc, char *argv[])
 
     mythreads_init();
     mythreads_tuple_out("%s","mutex");
+    mythreads_tuple_out("%s","read");
     
 
     // Initialize Struct's Values
@@ -217,14 +218,18 @@ int main(int argc, char *argv[])
     exit_flag = 0;
     time = 0;
     j = 0;
+    bridge = (thr_t *) malloc(100*sizeof(thr_t) );
     
     // Create Threads    
     while(1)
     {
+        mythreads_tuple_in("%s","read");
         scanf("%d %c %d", &cars, &c, &time);
+        printf("%d %c %d\n", cars, c, time);
         mythreads_tuple_in("%s","mutex");
         if(cars < 0)
         {
+            printf("EXIT FLAG\n");
             exit_flag = 1;
             if (current->cars_on_bridge == 0 && current->blue_waiting == 0 && current->red_waiting == 0)
             {
@@ -236,8 +241,6 @@ int main(int argc, char *argv[])
             break;
         }
         mythreads_tuple_out("%s","mutex");
-
-        bridge = (thr_t *) realloc( bridge ,sizeof(thr_t) *(cars+j));
 
         if (c == 'r')
         {
@@ -253,21 +256,22 @@ int main(int argc, char *argv[])
                 mythreads_create(&bridge[j+i], (void*)&Blue_Cars, NULL);
             } 
         } 
+        printf("all in\n");
         j = j + cars;
         sleep(time);
+        mythreads_tuple_out("%s","read");
     }
 
-    sleep(1);
-
-    // Destroy Monitors
+    perror("hi");
+    // Free Allocated Memory 
+    free(current);
     for ( i = 0; i < j; i++)
     {
         mythreads_join(&bridge[i]);
         mythreads_destroy(&bridge[i]);
     }
-    
 
-    // Free Allocated Memory 
-    free(current);
-    return 0;
+    sleep(1);
+
+    return 1;
 }

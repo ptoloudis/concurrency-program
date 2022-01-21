@@ -1,7 +1,6 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#include <stdarg.h>
 #include <ucontext.h>
 
 enum state {
@@ -36,7 +35,6 @@ typedef struct scheduler{
 
 // tuple 
 
- 
 #define SIZEOF_TS 100
 
 #define D_FIELD 0 // data field

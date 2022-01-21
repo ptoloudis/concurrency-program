@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -11,12 +12,13 @@
 
 #define DEFAULT_STACK_SIZE 64000
 #define DEFAULT_ARGUMENTS 0x1
-
-
 #define CLK_PERIOD 2
 
+
+/*******************Scheduler Functions********************/
 ucontext_t terminate, join;
 sigset_t sig_set;
+scheduler_t *scheduler_FIFO;
 
 static int signal_scheduler();
 
@@ -26,9 +28,9 @@ void create_timer(){
   
   //Timer Configuration
   timer.it_value.tv_sec = 0;
-  timer.it_value.tv_usec = 500000;
+  timer.it_value.tv_usec = 700000;
   timer.it_interval.tv_sec = 0;
-  timer.it_interval.tv_usec = 500000;
+  timer.it_interval.tv_usec = 700000;
   
   setitimer(ITIMER_REAL, &timer, NULL);
 }
@@ -51,23 +53,6 @@ void unblock_sigalarm(){
   }
 }
 
-// //Stack and Pointers for Thread
-// static int context_make(thread_t *thread, void (body)(void *), void *arguments){
-//   //Create Context
-//   thread->context = (ucontext_t *) malloc(sizeof(ucontext_t));
-//   if(!thread->context)
-//     return -1;
-
-//   //Build Context
-//   getcontext(thread->context);
-//   thread->context->uc_stack.ss_sp = (char *) malloc(SIGSTKSZ * sizeof(char));
-//   thread->context->uc_stack.ss_size = SIGSTKSZ * sizeof(char);
-//   thread->context->uc_link = &terminate;
-//   makecontext(thread->context, (void (*)(void)) body, 1, arguments);
-
-//   return 0;
-// }
-
 static void terminate_context(){
   getcontext(&terminate);
   
@@ -77,8 +62,6 @@ static void terminate_context(){
     setcontext(scheduler_FIFO->head->thread->thr);  //Transfer Control Back to main()
   }
 }
-
-
 
 static bool scheduler_enqueue(thr_t *thread){
   task_t *task = (task_t *) malloc(sizeof(task_t));
@@ -131,6 +114,9 @@ static int signal_scheduler(){
 
   return 0;
 }
+
+
+/*******************Thread Functions********************/
 
 int id;
 thr_t  *nxt ;
@@ -195,7 +181,11 @@ int mythreads_init(){
 
 int mythreads_create(thr_t *thread, void(body)(void *), void *arguments){
 
-    getcontext(thread->thr);
+    //ucontext_t *tmp;
+    thread->thr=(ucontext_t *) malloc (sizeof(ucontext_t));
+    if (getcontext(thread->thr)) {
+      return 0;
+    }
     thread->thr->uc_stack.ss_sp = malloc(DEFAULT_STACK_SIZE);
     thread->thr->uc_stack.ss_size = DEFAULT_STACK_SIZE;
     thread->thr->uc_stack.ss_flags = 0;
@@ -224,13 +214,10 @@ int mythreads_yield(){
 
 int mythreads_join(thr_t *thread){
 
-    while(thread->state != FINISHED){
-      mythreads_yield();
-    }
+    while(thread->state != FINISHED){ }
     
     return 0;
 }
-
 
 int mythreads_destroy(thr_t *thread){
     task_t *previous, *current;
@@ -245,7 +232,7 @@ int mythreads_destroy(thr_t *thread){
 
 }
 
-// Tuple Space
+/*******************Tuple Space Function****************/
 
 ts_list_t tuplespace[SIZEOF_TS];
 
@@ -318,7 +305,7 @@ int match(inode_list_t *inode1, inode_list_t *inode2)
                   (ptr1->node.f != ptr2->node.f)) return 0;
               break;
             default:
-              fprintf(stderr, "Shit!\n");
+              perror( "Shit!\n");
               exit(-1);
               break;
           }
@@ -337,7 +324,7 @@ int match(inode_list_t *inode1, inode_list_t *inode2)
               if (ptr2->type_tag != DOUBLE_TYPE) return 0;
               break;
             default:
-              fprintf(stderr, "Shit!\n");
+              perror( "Shit!\n");
               exit(-1);
               break;
           }
@@ -358,7 +345,7 @@ int match(inode_list_t *inode1, inode_list_t *inode2)
               if (ptr2->type_tag != DOUBLE_TYPE) return 0;
               break;
             default:
-              fprintf(stderr, "Shit!\n");
+              perror( "Shit!\n");
               exit(-1);
               break;
           }
@@ -401,7 +388,7 @@ void bind_val(inode_list_t *inode1, inode_list_t *inode2)
             *(ptr2->node.fp) = ptr1->node.f;
             break;
           default:
-            fprintf(stderr, "Shit!\n");
+            perror( "Shit!\n");
             exit(-1);
             break;
           }
@@ -423,7 +410,7 @@ void bind_val(inode_list_t *inode1, inode_list_t *inode2)
             *ptr1->node.fp = ptr2->node.f;
             break;
           default:
-            fprintf(stderr, "Shit!\n");
+            perror( "Shit!\n");
             exit(-1);
             break;
           }
@@ -499,13 +486,13 @@ int mythreads_tuple_out (char *fsm, ...)
           hash += 11 * i;
           break;
         default:
-          fprintf(stderr, "Unknown type of an out.\n");
+          perror( "Unknown type of an out.\n");
           exit(-1);
         }  
     } 
     else {
       if (*mask_ptr == '?') {
-        fprintf(stderr, "Cannot do a '?' on a out!");
+        perror( "Cannot do a '?' on a out!");
         exit(-1);
       }
     }
@@ -618,7 +605,7 @@ int mythreads_tuple_in (char *fsm, ...)
           hash += 11 * i;
           break;
         default:
-          fprintf(stderr, "Unknown type of an out.\n");
+          perror( "Unknown type of an out.\n");
           exit(-1);
         } 
     } else {
@@ -658,11 +645,11 @@ int mythreads_tuple_in (char *fsm, ...)
           hash += 11 * i;
           break;
         default:
-          fprintf(stderr, "Unknown type of an in.\n");
+          perror( "Unknown type of an in.\n");
           exit(-1);
         }
       } else {
-          fprintf(stderr, "Don't know what it is - in ?!");
+          perror( "Don't know what it is - in ?!");
           exit(-1);
       }
     }
