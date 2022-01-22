@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
         scanf("%d %c %d", &cars, &c, &time);
         printf("%d %c %d\n", cars, c, time);
         mythreads_tuple_in("%s","mutex");
+
         if(cars < 0)
         {
             printf("EXIT FLAG\n");
@@ -256,21 +257,19 @@ int main(int argc, char *argv[])
                 mythreads_create(&bridge[j+i], (void*)&Blue_Cars, NULL);
             } 
         } 
-        printf("all in\n");
+
         j = j + cars;
         sleep(time);
         mythreads_tuple_out("%s","read");
     }
-
-    perror("hi");
+    printf("hihih\n");
     // Free Allocated Memory 
-    free(current);
     for ( i = 0; i < j; i++)
     {
         mythreads_join(&bridge[i]);
         mythreads_destroy(&bridge[i]);
     }
-
+    free(current);
     sleep(1);
 
     return 1;

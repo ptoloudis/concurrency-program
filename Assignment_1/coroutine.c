@@ -1,3 +1,8 @@
+/*
+Team : 10
+Names : Apostolopoulou Ioanna & Toloudis Panagiotis
+AEM : 03121 & 02995
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,7 +13,7 @@ char *buf;
 co_t co1, co2, co_main;
 FILE* input_file;
 
-
+// Return the size of the file
 int size(FILE* fl) 
 {
     int j,size;
@@ -47,6 +52,7 @@ int size(FILE* fl)
     return 0;
 }
 
+// Reads to the buffer and writes to a new file
 void *consumer()
 {   
     FILE* fl;
@@ -72,7 +78,7 @@ void *consumer()
     return 0;
 }
 
-
+// Reads the input file and write it to the buffer
 void *producer()
 {   
     int length, i;
@@ -105,8 +111,6 @@ void *producer()
 
     return 0;
 }
-
-
 
 /*********************** MAIN ***********************/
 int main(int argc, char *argv[]){

@@ -1,3 +1,9 @@
+/*
+Team : 10
+Names : Apostolopoulou Ioanna & Toloudis Panagiotis
+AEM : 03121 & 02995
+*/
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -28,9 +34,9 @@ void create_timer(){
   
   //Timer Configuration
   timer.it_value.tv_sec = 0;
-  timer.it_value.tv_usec = 700000;
+  timer.it_value.tv_usec = 500000;
   timer.it_interval.tv_sec = 0;
-  timer.it_interval.tv_usec = 700000;
+  timer.it_interval.tv_usec = 500000;
   
   setitimer(ITIMER_REAL, &timer, NULL);
 }
@@ -53,6 +59,7 @@ void unblock_sigalarm(){
   }
 }
 
+// Terminate the last context and go to main
 static void terminate_context(){
   getcontext(&terminate);
   
@@ -63,6 +70,7 @@ static void terminate_context(){
   }
 }
 
+// Input to the scheduler
 static bool scheduler_enqueue(thr_t *thread){
   task_t *task = (task_t *) malloc(sizeof(task_t));
   if(!task)
@@ -85,6 +93,7 @@ static bool scheduler_enqueue(thr_t *thread){
   return true;
 }
 
+// Make the swap to the next context
 static void scheduler(int signum){
   //Signal Safe with Block and Unblock
   block_sigalarm();
@@ -105,6 +114,7 @@ static void scheduler(int signum){
   unblock_sigalarm();
 }
 
+// Call the scheduler
 static int signal_scheduler(){
   
   //Run Scheduler
@@ -122,6 +132,7 @@ int id;
 thr_t  *nxt ;
 scheduler_t *schedr;
 
+//Initialize the Thread
 int mythreads_init(){
 
     thr_t *main;
@@ -179,6 +190,7 @@ int mythreads_init(){
     return 0;
 }
 
+//Create a Thread
 int mythreads_create(thr_t *thread, void(body)(void *), void *arguments){
 
     //ucontext_t *tmp;
@@ -212,6 +224,7 @@ int mythreads_yield(){
     return 0;
 }
 
+// Wait to Join a Thread
 int mythreads_join(thr_t *thread){
 
     while(thread->state != FINISHED){ }
@@ -219,6 +232,7 @@ int mythreads_join(thr_t *thread){
     return 0;
 }
 
+//Terminate the Thread and Free Memory
 int mythreads_destroy(thr_t *thread){
     task_t *previous, *current;
   
@@ -236,7 +250,8 @@ int mythreads_destroy(thr_t *thread){
 
 ts_list_t tuplespace[SIZEOF_TS];
 
-void ts_init(){ // Create and initialize the hash table of tuplespace
+// Create and initialize the hash table of tuplespace
+void ts_init(){ 
   int i;
   for(i=0;i<SIZEOF_TS;i++){
     tuplespace[i].lock = F;
@@ -244,7 +259,8 @@ void ts_init(){ // Create and initialize the hash table of tuplespace
   }
 }
 
-void free_node(inode_list_t *inode){ // Free the memory of a node
+// Free the memory of a node
+void free_node(inode_list_t *inode){ 
   inode_list_t *nxt;
   for(nxt=inode;nxt->next!=NULL;nxt=nxt->next){ // Free the memory of the node
     free(nxt);
@@ -252,7 +268,8 @@ void free_node(inode_list_t *inode){ // Free the memory of a node
   free(nxt);
 }
 
-void ts_destroy(){ // Destroy the hash table of tuplespace
+// Destroy the hash table of tuplespace
+void ts_destroy(){ 
   int i;
   ts_node_t *temp;
   ts_node_t *temp2;
