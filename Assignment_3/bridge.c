@@ -262,7 +262,11 @@ int main(int argc, char *argv[])
         sleep(time);
         mythreads_tuple_out("%s","read");
     }
+<<<<<<< Updated upstream
     printf("hihih\n");
+=======
+
+>>>>>>> Stashed changes
     // Free Allocated Memory 
     for ( i = 0; i < j; i++)
     {
