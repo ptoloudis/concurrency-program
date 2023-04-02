@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "my_pipe.h": "c",
+        "stdio.h": "c"
+    }
+}

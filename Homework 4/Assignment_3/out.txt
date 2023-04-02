@@ -1,0 +1,16 @@
+2 r 1
+[0;33mSaving 0 Running 0[0m
+[1;31mRed Cars: 
+[0mRed Cars arriving on the bridge.
+[0;33mSaving 0 Running 1[0m
+[1;31mRed Cars: 
+[0mRed Cars arriving on the bridge.
+[0;33mSaving 1 Running 0[0m
+2 b 1
+[0;33mSaving 0 Running 0[0m
+[1;31mRed Cars: 
+[0mRed Cars are leaving the Bridge.
+[0;33mSaving 0 Running 1[0m
+[1;31mRed Cars: 
+[0mRed Cars are leaving the Bridge.
+Last Car on Bridge is Leaving.
